@@ -94,9 +94,6 @@ export const Sidebar = () => {
           <div className="p-6 border-b border-border/50">
             <div className="flex items-center justify-between">
               <Link to="/dashboard" className="flex items-center gap-3 group">
-                <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all">
-                  <Shield className="h-6 w-6 text-primary" />
-                </div>
                 <div>
                   <h1 className="font-mono font-bold text-foreground text-lg tracking-tight">
                     CyberShield
