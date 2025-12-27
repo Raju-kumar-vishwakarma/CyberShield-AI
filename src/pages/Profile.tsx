@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AvatarUpload } from '@/components/AvatarUpload';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Mail, Briefcase, Building, Phone, Save, Loader2, Shield } from 'lucide-react';
@@ -94,24 +94,11 @@ export default function Profile() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Avatar Section */}
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20 border-2 border-primary/30">
-                  <AvatarImage src={formData.avatar_url} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-mono font-bold">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <Label htmlFor="avatar_url">Avatar URL</Label>
-                  <Input
-                    id="avatar_url"
-                    placeholder="https://example.com/avatar.jpg"
-                    value={formData.avatar_url}
-                    onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
-                    className="bg-secondary/30 border-border/50"
-                  />
-                </div>
-              </div>
+              <AvatarUpload
+                currentAvatarUrl={formData.avatar_url}
+                onAvatarChange={(url) => setFormData({ ...formData, avatar_url: url })}
+                initials={getInitials()}
+              />
 
               {/* Email (Read-only) */}
               <div className="space-y-2">

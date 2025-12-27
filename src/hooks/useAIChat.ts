@@ -42,6 +42,17 @@ export const useAIChat = () => {
     if (!message.trim()) return null;
 
     setIsSending(true);
+    
+    // Optimistically add user message to UI immediately
+    const userMessage: ChatMessage = {
+      id: `temp-user-${Date.now()}`,
+      sender_name: 'User',
+      content: message,
+      is_ai: false,
+      created_at: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: { 
@@ -58,6 +69,16 @@ export const useAIChat = () => {
         throw new Error(data.error);
       }
 
+      // Add AI response to UI immediately
+      const aiMessage: ChatMessage = {
+        id: `temp-ai-${Date.now()}`,
+        sender_name: 'CyberGuard AI',
+        content: data.response,
+        is_ai: true,
+        created_at: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+
       // Update conversation history
       conversationHistory.current.push(
         { role: 'user', content: message },
@@ -67,6 +88,8 @@ export const useAIChat = () => {
       return data.response;
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove the optimistic user message on error
+      setMessages(prev => prev.filter(m => m.id !== userMessage.id));
       toast({
         title: 'Message Failed',
         description: error instanceof Error ? error.message : 'Failed to send message',

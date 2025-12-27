@@ -48,7 +48,9 @@ const Dashboard = () => {
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border/50">
             <div className="flex items-center gap-4">
-            
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
               <div>
                 <h1 className="text-2xl lg:text-3xl font-mono font-bold text-foreground tracking-tight">
                   Security Dashboard

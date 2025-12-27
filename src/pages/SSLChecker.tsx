@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSSLCheck } from '@/hooks/useSSLCheck';
-import { Lock, Shield, AlertTriangle, CheckCircle, Loader2, Clock, Globe, RefreshCw, Calendar, Building, Hash, ShieldCheck, ShieldX } from 'lucide-react';
+import { useSSLCheck, SSLCheckResult } from '@/hooks/useSSLCheck';
+import { Lock, Shield, AlertTriangle, CheckCircle, Loader2, Clock, Globe, RefreshCw, Calendar, Building, ShieldCheck, ShieldX, Trash2, X } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
 const getGradeColor = (grade: string | null) => {
@@ -37,7 +37,7 @@ const getExpiryColor = (expiresAt: string | null) => {
 
 export default function SSLChecker() {
   const [domain, setDomain] = useState('');
-  const { isChecking, result, history, checkSSL, fetchHistory } = useSSLCheck();
+  const { isChecking, result, history, checkSSL, fetchHistory, deleteCheck, clearAllHistory, setResult } = useSSLCheck();
 
   useEffect(() => {
     fetchHistory();
@@ -53,6 +53,11 @@ export default function SSLChecker() {
   const getDaysUntilExpiry = (expiresAt: string | null) => {
     if (!expiresAt) return null;
     return Math.floor((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  };
+
+  const handleHistoryClick = (item: SSLCheckResult) => {
+    setResult(item);
+    setDomain(item.domain);
   };
 
   return (
@@ -111,7 +116,7 @@ export default function SSLChecker() {
         {/* Result */}
         {result && (
           <Card className={`border-2 ${result.is_valid ? 'border-green-500/50 bg-green-500/5' : 'border-red-500/50 bg-red-500/5'}`}>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 {result.is_valid ? (
                   <>
@@ -124,10 +129,18 @@ export default function SSLChecker() {
                     <span className="text-red-500">SSL Issues Detected</span>
                   </>
                 )}
-                <Badge variant="outline" className="ml-auto">
+                <Badge variant="outline" className="ml-2">
                   Real Certificate Data
                 </Badge>
               </CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setResult(null)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Grade and Main Info */}
@@ -206,11 +219,22 @@ export default function SSLChecker() {
 
         {/* History */}
         <Card className="bg-card/50 border-border/50">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-mono flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Recent Checks
             </CardTitle>
+            {history.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllHistory}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear All
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[300px]">
@@ -224,32 +248,41 @@ export default function SSLChecker() {
                     <div
                       key={check.id}
                       className="p-3 rounded-lg bg-secondary/30 border border-border/30 flex items-center justify-between cursor-pointer hover:bg-secondary/50 transition-colors"
-                      onClick={() => {
-                        setDomain(check.domain);
-                      }}
+                      onClick={() => handleHistoryClick(check)}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         {check.is_valid ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
                         ) : (
-                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                          <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                         )}
-                        <div>
-                          <span className="font-mono text-sm">{check.domain}</span>
+                        <div className="min-w-0">
+                          <span className="font-mono text-sm truncate block">{check.domain}</span>
                           {check.issuer && (
-                            <span className="text-xs text-muted-foreground ml-2">
+                            <span className="text-xs text-muted-foreground">
                               by {check.issuer}
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <Badge className={getGradeColor(check.grade)}>
                           {check.grade || 'N/A'}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
                           {format(new Date(check.checked_at), 'MMM dd, HH:mm')}
                         </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteCheck(check.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}

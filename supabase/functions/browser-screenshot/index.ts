@@ -73,9 +73,16 @@ serve(async (req) => {
       );
     }
 
-    // Convert to base64
+    // Convert to base64 using chunked approach to avoid stack overflow
     const buffer = await response.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const uint8Array = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64 = btoa(binary);
 
     console.log('Screenshot captured successfully');
 

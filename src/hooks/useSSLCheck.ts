@@ -159,11 +159,68 @@ export const useSSLCheck = () => {
     }
   }, []);
 
+  const deleteCheck = useCallback(async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('ssl_checks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setHistory(prev => prev.filter(item => item.id !== id));
+      if (result?.id === id) {
+        setResult(null);
+      }
+      
+      toast({
+        title: "Deleted",
+        description: "SSL check record deleted successfully",
+      });
+    } catch (error: any) {
+      console.error('Error deleting SSL check:', error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete record",
+        variant: "destructive"
+      });
+    }
+  }, [result, toast]);
+
+  const clearAllHistory = useCallback(async () => {
+    try {
+      const { error } = await supabase
+        .from('ssl_checks')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (error) throw error;
+
+      setHistory([]);
+      setResult(null);
+      
+      toast({
+        title: "Cleared",
+        description: "All SSL check history has been deleted",
+      });
+    } catch (error: any) {
+      console.error('Error clearing history:', error);
+      toast({
+        title: "Clear Failed",
+        description: error.message || "Failed to clear history",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
   return {
     isChecking,
     result,
     history,
     checkSSL,
-    fetchHistory
+    fetchHistory,
+    deleteCheck,
+    clearAllHistory,
+    setResult
   };
 };

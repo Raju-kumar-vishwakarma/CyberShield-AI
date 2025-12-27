@@ -76,12 +76,12 @@ export const useSecurityScore = () => {
     try {
       // Fetch all data in parallel
       const [
-        { data: threats },
-        { data: phishingScans },
-        { data: suspiciousIPs },
-        { data: sslChecks },
-        { data: emailChecks },
-        { data: honeypotLogs }
+        { data: threats, error: threatError },
+        { data: phishingScans, error: phishingError },
+        { data: suspiciousIPs, error: ipError },
+        { data: sslChecks, error: sslError },
+        { data: emailChecks, error: emailError },
+        { data: honeypotLogs, error: honeypotError }
       ] = await Promise.all([
         supabase.from('network_threats').select('*').limit(500),
         supabase.from('phishing_scans').select('*').limit(500),
@@ -90,6 +90,14 @@ export const useSecurityScore = () => {
         supabase.from('email_breach_checks').select('*').limit(100),
         supabase.from('honeypot_logs').select('*').limit(500)
       ]);
+      
+      // Log any errors for debugging
+      if (threatError) console.error('Threats fetch error:', threatError);
+      if (phishingError) console.error('Phishing fetch error:', phishingError);
+      if (ipError) console.error('IP fetch error:', ipError);
+      if (sslError) console.error('SSL fetch error:', sslError);
+      if (emailError) console.error('Email fetch error:', emailError);
+      if (honeypotError) console.error('Honeypot fetch error:', honeypotError);
 
       const threatsList = threats || [];
       const scansList = phishingScans || [];
