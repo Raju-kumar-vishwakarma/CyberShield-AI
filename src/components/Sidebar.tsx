@@ -16,6 +16,7 @@ import {
   User,
   Gauge,
   Globe,
+  Wifi,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/security-score", label: "Security Score", icon: Gauge },
+  { path: "/network", label: "Network Devices", icon: Wifi },
   { path: "/phishing", label: "Phishing Detection", icon: Mail },
   { path: "/threats", label: "Threat Monitoring", icon: Activity },
   { path: "/web-scanner", label: "Web Scanner", icon: Globe },
@@ -94,6 +96,9 @@ export const Sidebar = () => {
           <div className="p-6 border-b border-border/50">
             <div className="flex items-center justify-between">
               <Link to="/dashboard" className="flex items-center gap-3 group">
+                <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 group-hover:shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all">
+                  <Shield className="h-6 w-6 text-primary" />
+                </div>
                 <div>
                   <h1 className="font-mono font-bold text-foreground text-lg tracking-tight">
                     CyberShield

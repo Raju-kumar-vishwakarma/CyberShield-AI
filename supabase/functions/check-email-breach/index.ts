@@ -109,6 +109,28 @@ serve(async (req) => {
     // Step 2: Use Lovable AI to simulate breach check and provide security analysis
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
+    // Add randomness seed based on email hash and current timestamp for variety
+    const emailHash = cleanEmail.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+    const randomSeed = (emailHash + Date.now()) % 100;
+    const shouldBeBreach = randomSeed < 40; // ~40% chance of breach
+    
+    // Predefined breach sources pool for variety
+    const allBreachSources = [
+      "LinkedIn 2012", "LinkedIn 2021", "Adobe 2013", "Canva 2019", 
+      "Collection #1 2019", "Dropbox 2012", "MyFitnessPal 2018", 
+      "Twitter 2022", "Facebook 2019", "Zynga 2019", "Dubsmash 2018",
+      "MyHeritage 2018", "Exactis 2018", "Apollo 2018", "Houzz 2019",
+      "500px 2019", "Evite 2019", "Wattpad 2020", "Nitro 2020",
+      "Pixlr 2021", "Clubhouse 2021", "T-Mobile 2021", "Parler 2021",
+      "Twitch 2021", "Gravatar 2021", "Epik 2021", "CashCrate 2017",
+      "8tracks 2017", "Verifications.io 2019", "PDL 2019"
+    ];
+    
+    // Randomly select breach sources
+    const shuffled = [...allBreachSources].sort(() => Math.random() - 0.5);
+    const breachCount = shouldBeBreach ? Math.floor(Math.random() * 4) + 1 : 0;
+    const selectedBreaches = shuffled.slice(0, breachCount);
+    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -120,25 +142,27 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a cybersecurity expert analyzing email breach exposure. 
-            Simulate a realistic data breach check. Generate realistic but FICTIONAL results.
+            content: `You are a cybersecurity expert. Generate a security analysis for an email breach check.
             
-            Return a JSON object with:
-            - is_breached: boolean (randomly true ~30% of the time for realism)
-            - breach_count: number (0-5 if breached)
-            - breach_sources: array of strings (fictional but realistic breach names like "LinkedIn 2021", "Adobe 2019", "Collection #1 2019", "Canva 2019", etc.)
-            - risk_level: string ("low", "medium", "high", "critical")
-            - ai_analysis: string (2-3 sentences about security recommendations)
-            - exposed_data_types: array (what types of data were exposed: "passwords", "email addresses", "usernames", "phone numbers", etc.)
+            The email "${cleanEmail}" has ${shouldBeBreach ? `been found in ${breachCount} data breach(es): ${selectedBreaches.join(', ')}` : 'NOT been found in any known data breaches'}.
             
-            Make it educational and realistic but clearly note this is a simulation for educational purposes.`
+            Return a JSON object with EXACTLY these values:
+            - is_breached: ${shouldBeBreach}
+            - breach_count: ${breachCount}
+            - breach_sources: ${JSON.stringify(selectedBreaches)}
+            - risk_level: "${shouldBeBreach ? (breachCount >= 3 ? 'high' : breachCount >= 2 ? 'medium' : 'low') : 'safe'}"
+            - ai_analysis: string (2-3 unique sentences with personalized security recommendations based on the specific breaches found. Mention specific actions to take. Be varied in your response.)
+            - exposed_data_types: array (what types of data were likely exposed based on the specific breaches)
+            
+            Make the ai_analysis unique and varied each time. Do not repeat the same generic advice.`
           },
           {
             role: 'user',
-            content: `Check email breach status for: ${cleanEmail}`
+            content: `Generate security analysis for email: ${cleanEmail}. Random ID: ${Date.now()}-${Math.random().toString(36).substring(7)}`
           }
         ],
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
+        temperature: 0.9
       }),
     });
 

@@ -35,13 +35,31 @@ export const useProfile = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
-      setProfile(data);
+      // If no profile exists, create one
+      if (!data) {
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            full_name: user.user_metadata?.full_name || null
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating profile:', createError);
+        } else {
+          setProfile(newProfile);
+        }
+      } else {
+        setProfile(data);
+      }
     } catch (error: unknown) {
       console.error('Error fetching profile:', error);
     } finally {

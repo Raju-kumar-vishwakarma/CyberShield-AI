@@ -18,6 +18,7 @@ import SSLChecker from "./pages/SSLChecker";
 import SecurityScore from "./pages/SecurityScore";
 import Profile from "./pages/Profile";
 import WebScanner from "./pages/WebScanner";
+import NetworkDevices from "./pages/NetworkDevices";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/security-score" element={<ProtectedRoute><SecurityScore /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/web-scanner" element={<ProtectedRoute><WebScanner /></ProtectedRoute>} />
+            <Route path="/network" element={<ProtectedRoute><NetworkDevices /></ProtectedRoute>} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
