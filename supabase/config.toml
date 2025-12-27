@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.analyze-file]
 verify_jwt = false
 
+[functions.analyze-media]
+verify_jwt = false
+
 [functions.analyze-phishing]
 verify_jwt = false
 
@@ -85,4 +88,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.virustotal-lookup]
+verify_jwt = false
+
+[functions.dns-security-check]
+verify_jwt = false
+
+[functions.dark-web-monitor]
 verify_jwt = false

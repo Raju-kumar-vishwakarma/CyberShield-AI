@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_detection_scans: {
+        Row: {
+          ai_score: number
+          analysis: string | null
+          authentic_score: number
+          confidence: number
+          created_at: string
+          file_name: string
+          id: string
+          is_ai_generated: boolean
+          media_type: string
+          risk_level: string
+          strict_mode: boolean
+          user_id: string | null
+        }
+        Insert: {
+          ai_score?: number
+          analysis?: string | null
+          authentic_score?: number
+          confidence?: number
+          created_at?: string
+          file_name: string
+          id?: string
+          is_ai_generated?: boolean
+          media_type?: string
+          risk_level?: string
+          strict_mode?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          ai_score?: number
+          analysis?: string | null
+          authentic_score?: number
+          confidence?: number
+          created_at?: string
+          file_name?: string
+          id?: string
+          is_ai_generated?: boolean
+          media_type?: string
+          risk_level?: string
+          strict_mode?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           auto_delete: boolean

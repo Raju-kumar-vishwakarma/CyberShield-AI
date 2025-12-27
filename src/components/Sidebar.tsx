@@ -17,6 +17,9 @@ import {
   Gauge,
   Globe,
   Wifi,
+  ScanEye,
+  Globe2,
+  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,12 +34,15 @@ const navItems = [
   { path: "/security-score", label: "Security Score", icon: Gauge },
   { path: "/network", label: "Network Devices", icon: Wifi },
   { path: "/phishing", label: "Phishing Detection", icon: Mail },
+  { path: "/ai-detection", label: "AI Detection", icon: ScanEye },
   { path: "/threats", label: "Threat Monitoring", icon: Activity },
   { path: "/web-scanner", label: "Web Scanner", icon: Globe },
   { path: "/secure-chat", label: "Secure Chat", icon: MessageSquare },
   { path: "/security-tools", label: "Security Tools", icon: Wrench },
   { path: "/email-breach", label: "Email Breach Checker", icon: AlertTriangle },
   { path: "/ssl-checker", label: "SSL Checker", icon: Lock },
+  { path: "/dns-checker", label: "DNS Security", icon: Globe2 },
+  { path: "/dark-web", label: "Dark Web Monitor", icon: EyeOff },
   { path: "/activity-logs", label: "Activity Logs", icon: ClipboardList },
 ];
 
@@ -48,16 +54,21 @@ export const Sidebar = () => {
 
   const getInitials = () => {
     if (profile?.full_name) {
-      return profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      return profile.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
     }
     if (user?.email) {
       return user.email[0].toUpperCase();
     }
-    return 'U';
+    return "U";
   };
 
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
-  const displayEmail = user?.email || 'user@example.com';
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "User";
+  const displayEmail = user?.email || "user@example.com";
 
   return (
     <>
@@ -88,7 +99,7 @@ export const Sidebar = () => {
       <aside
         className={cn(
           "fixed left-0 top-0 h-full w-64 bg-card/80 backdrop-blur-2xl border-r border-border/30 z-40 transition-transform duration-300 lg:translate-x-0 shadow-[4px_0_32px_rgba(0,0,0,0.3)]",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex flex-col h-full">
@@ -97,9 +108,7 @@ export const Sidebar = () => {
             <div className="flex items-center justify-between">
               <Link to="/dashboard" className="flex items-center gap-3 group">
                 <div>
-                  <h1 className="font-mono font-bold text-foreground text-lg tracking-tight">
-                    CyberShield
-                  </h1>
+                  <h1 className="font-mono font-bold text-foreground text-lg tracking-tight">CyberShield</h1>
                   <p className="text-xs text-muted-foreground">Security Platform</p>
                 </div>
               </Link>
@@ -131,13 +140,13 @@ export const Sidebar = () => {
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-300 group",
                     isActive
                       ? "bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_hsl(var(--primary)/0.2)]"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent",
                   )}
                 >
                   <item.icon
                     className={cn(
                       "h-4 w-4 transition-all flex-shrink-0",
-                      isActive ? "text-primary" : "group-hover:text-primary"
+                      isActive ? "text-primary" : "group-hover:text-primary",
                     )}
                   />
                   <span className="font-mono text-sm truncate">{item.label}</span>
@@ -148,8 +157,8 @@ export const Sidebar = () => {
 
           {/* User Section */}
           <div className="p-4 border-t border-border/50">
-            <Link 
-              to="/profile" 
+            <Link
+              to="/profile"
               className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer"
             >
               <Avatar className="h-10 w-10 border border-primary/30">
@@ -165,12 +174,7 @@ export const Sidebar = () => {
               <User className="h-4 w-4 text-muted-foreground" />
             </Link>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="flex-1 justify-start gap-2"
-                onClick={() => signOut()}
-              >
+              <Button variant="ghost" size="sm" className="flex-1 justify-start gap-2" onClick={() => signOut()}>
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </Button>

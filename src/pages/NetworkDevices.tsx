@@ -102,74 +102,33 @@ const generateBandwidth = (deviceType: string, isOnline: boolean) => {
 };
 
 const generateDevices = (userIp: string): NetworkDevice[] => {
-  const deviceTypes: NetworkDevice["deviceType"][] = ["router", "laptop", "smartphone", "desktop", "tv", "printer", "iot"];
-  const hostnames = [
-    "Gateway-Router", "MacBook-Pro", "iPhone-15", "Windows-PC", "Smart-TV",
-    "HP-Printer", "Alexa-Echo", "iPad-Air", "Android-Phone", "Gaming-PC",
-    "Security-Cam", "Smart-Bulb", "Chromecast", "PS5-Console", "Work-Laptop"
-  ];
-
   const ipParts = userIp.split(".");
   const baseIp = ipParts.length === 4 ? `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}` : "192.168.1";
 
-  const devices: NetworkDevice[] = [];
+  // Fixed 6 devices: 3 phones + 3 laptops with specific names
+  const fixedDevices: { hostname: string; deviceType: NetworkDevice["deviceType"]; manufacturer: string }[] = [
+    { hostname: "MacBook-Pro", deviceType: "laptop", manufacturer: "Apple Inc." },
+    { hostname: "iPhone-15-Pro", deviceType: "smartphone", manufacturer: "Apple Inc." },
+    { hostname: "Dell-XPS-15", deviceType: "laptop", manufacturer: "Dell Inc." },
+    { hostname: "Samsung-Galaxy-S24", deviceType: "smartphone", manufacturer: "Samsung Electronics" },
+    { hostname: "HP-EliteBook", deviceType: "laptop", manufacturer: "HP Inc." },
+    { hostname: "OnePlus-12", deviceType: "smartphone", manufacturer: "OnePlus" },
+  ];
 
-  devices.push({
-    id: "router-1",
-    ip: `${baseIp}.1`,
+  const devices: NetworkDevice[] = fixedDevices.map((device, index) => ({
+    id: `device-${index}`,
+    ip: `${baseIp}.${10 + index * 5}`,
     mac: generateMac(),
-    hostname: "Gateway-Router",
-    deviceType: "router",
-    manufacturer: manufacturers[Math.floor(Math.random() * 5) + 10],
-    status: "online",
+    hostname: device.hostname,
+    deviceType: device.deviceType,
+    manufacturer: device.manufacturer,
+    status: "online" as const,
     lastSeen: new Date().toISOString(),
-    signalStrength: 100,
+    signalStrength: Math.floor(Math.random() * 30) + 70,
+    isCurrentDevice: index === 0,
     isBlocked: false,
-  });
-
-  devices.push({
-    id: "current-device",
-    ip: userIp,
-    mac: generateMac(),
-    hostname: "Your-Device",
-    deviceType: "laptop",
-    manufacturer: "Current Device",
-    status: "online",
-    lastSeen: new Date().toISOString(),
-    signalStrength: Math.floor(Math.random() * 20) + 80,
-    isCurrentDevice: true,
-    isBlocked: false,
-    bandwidth: generateBandwidth("laptop", true),
-  });
-
-  const numDevices = Math.floor(Math.random() * 6) + 3;
-  const usedIps = new Set([1, parseInt(ipParts[3] || "100")]);
-
-  for (let i = 0; i < numDevices; i++) {
-    let lastOctet;
-    do {
-      lastOctet = Math.floor(Math.random() * 250) + 2;
-    } while (usedIps.has(lastOctet));
-    usedIps.add(lastOctet);
-
-    const deviceType = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
-    const isOnline = Math.random() > 0.2;
-    const isUnknown = Math.random() > 0.8;
-
-    devices.push({
-      id: `device-${i}`,
-      ip: `${baseIp}.${lastOctet}`,
-      mac: generateMac(),
-      hostname: isUnknown ? "Unknown-Device" : hostnames[Math.floor(Math.random() * hostnames.length)] + `-${i}`,
-      deviceType: isUnknown ? "unknown" : deviceType,
-      manufacturer: isUnknown ? "Unknown" : manufacturers[Math.floor(Math.random() * manufacturers.length)],
-      status: isOnline ? "online" : "offline",
-      lastSeen: isOnline ? new Date().toISOString() : new Date(Date.now() - Math.random() * 86400000).toISOString(),
-      signalStrength: isOnline ? Math.floor(Math.random() * 60) + 40 : undefined,
-      isBlocked: false,
-      bandwidth: generateBandwidth(isUnknown ? "unknown" : deviceType, isOnline),
-    });
-  }
+    bandwidth: generateBandwidth(device.deviceType, true),
+  }));
 
   return devices.sort((a, b) => {
     const aNum = parseInt(a.ip.split(".")[3]);

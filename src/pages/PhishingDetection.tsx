@@ -30,7 +30,11 @@ import {
   Trash2,
   Paperclip,
   Bug,
-  Hash
+  Hash,
+  Image,
+  Video,
+  Camera,
+  Eye
 } from "lucide-react";
 import { usePhishingDetection } from "@/hooks/usePhishingDetection";
 import { formatDistanceToNow } from "date-fns";
@@ -86,6 +90,16 @@ interface ExtractedAttachment {
   size: number;
 }
 
+interface MediaAnalysisResult {
+  mediaType: 'image' | 'video';
+  isAIGenerated: boolean;
+  confidence: number;
+  riskLevel: 'authentic' | 'likely_authentic' | 'uncertain' | 'likely_ai' | 'ai_generated';
+  indicators: Array<{ type: string; description: string; weight: number }>;
+  analysis: string;
+  recommendations: string[];
+}
+
 const PhishingDetection = () => {
   const [emailContent, setEmailContent] = useState("");
   const [urlToScan, setUrlToScan] = useState("");
@@ -112,6 +126,11 @@ const PhishingDetection = () => {
   const [extractedAttachments, setExtractedAttachments] = useState<ExtractedAttachment[]>([]);
   const [isExtractingAttachments, setIsExtractingAttachments] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [selectedMediaFile, setSelectedMediaFile] = useState<File | null>(null);
+  const [isAnalyzingMedia, setIsAnalyzingMedia] = useState(false);
+  const [mediaAnalysisResult, setMediaAnalysisResult] = useState<MediaAnalysisResult | null>(null);
+  const [isDraggingMedia, setIsDraggingMedia] = useState(false);
   const { toast } = useToast();
 
   const handleScan = async () => {
@@ -507,6 +526,111 @@ const PhishingDetection = () => {
     }
   };
 
+  // Media Analysis Handlers
+  const handleMediaDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingMedia(true);
+  };
+
+  const handleMediaDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingMedia(false);
+  };
+
+  const handleMediaDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingMedia(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        setSelectedMediaFile(file);
+        setMediaAnalysisResult(null);
+      } else {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload an image or video file",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleMediaFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setSelectedMediaFile(files[0]);
+      setMediaAnalysisResult(null);
+    }
+  };
+
+  const clearMediaFile = () => {
+    setSelectedMediaFile(null);
+    setMediaAnalysisResult(null);
+    if (mediaInputRef.current) {
+      mediaInputRef.current.value = '';
+    }
+  };
+
+  const handleMediaAnalyze = async () => {
+    if (!selectedMediaFile) return;
+
+    setIsAnalyzingMedia(true);
+    setMediaAnalysisResult(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Content = (reader.result as string).split(',')[1] || reader.result as string;
+        
+        const mediaType = selectedMediaFile.type.startsWith('image/') ? 'image' : 'video';
+        
+        const { data, error } = await supabase.functions.invoke('analyze-media', {
+          body: {
+            mediaType,
+            fileName: selectedMediaFile.name,
+            fileSize: selectedMediaFile.size,
+            fileContent: base64Content.slice(0, 5000),
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          setMediaAnalysisResult(data.data);
+          const result = data.data as MediaAnalysisResult;
+          toast({
+            title: result.isAIGenerated ? "⚠️ AI-Generated Content Detected" : "Content Appears Authentic",
+            description: `Confidence: ${result.confidence}% - ${result.riskLevel.replace(/_/g, ' ')}`,
+            variant: result.isAIGenerated ? "destructive" : "default",
+          });
+        } else {
+          throw new Error(data.error || 'Analysis failed');
+        }
+        setIsAnalyzingMedia(false);
+      };
+      reader.readAsDataURL(selectedMediaFile);
+    } catch (error: any) {
+      toast({
+        title: "Analysis Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      setIsAnalyzingMedia(false);
+    }
+  };
+
+  const getRiskLevelBadgeColor = (level: string) => {
+    switch (level) {
+      case 'authentic': return 'bg-green-500';
+      case 'likely_authentic': return 'bg-green-400';
+      case 'uncertain': return 'bg-yellow-500';
+      case 'likely_ai': return 'bg-orange-500';
+      case 'ai_generated': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -829,6 +953,198 @@ const PhishingDetection = () => {
                     </h4>
                     <ul className="space-y-1">
                       {fileAnalysisResult.recommendations.map((rec, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Image & Video Detection */}
+        <Card variant="cyber" className="animate-fade-in border-primary/50" style={{ animationDelay: "0.12s" }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              AI Image & Video Detection
+              <Zap className="h-4 w-4 text-primary animate-pulse" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Media Type Badges */}
+            <div className="flex gap-2">
+              <Badge variant="info" className="text-xs">
+                <Image className="h-3 w-3 mr-1" />
+                AI Image Detection
+              </Badge>
+              <Badge variant="info" className="text-xs">
+                <Video className="h-3 w-3 mr-1" />
+                Deepfake Detection
+              </Badge>
+            </div>
+
+            {/* Drop Zone for Media */}
+            <div
+              onDragOver={handleMediaDragOver}
+              onDragLeave={handleMediaDragLeave}
+              onDrop={handleMediaDrop}
+              onClick={() => mediaInputRef.current?.click()}
+              className={`
+                relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
+                ${isDraggingMedia 
+                  ? 'border-primary bg-primary/10' 
+                  : 'border-border/50 hover:border-primary/50 hover:bg-secondary/30'}
+              `}
+            >
+              <input
+                ref={mediaInputRef}
+                type="file"
+                onChange={handleMediaFileSelect}
+                className="hidden"
+                accept="image/*,video/*"
+              />
+              <Camera className={`h-12 w-12 mx-auto mb-4 ${isDraggingMedia ? 'text-primary' : 'text-muted-foreground'}`} />
+              <p className="text-sm text-muted-foreground mb-1">
+                {isDraggingMedia ? 'Drop media file here' : 'Drag & drop an image or video to detect AI generation'}
+              </p>
+              <p className="text-xs text-muted-foreground/60">
+                Supports: JPG, PNG, GIF, WEBP, MP4, MOV, AVI, WEBM (Max 50MB)
+              </p>
+            </div>
+
+            {/* Selected Media File */}
+            {selectedMediaFile && (
+              <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 border border-border/50">
+                <div className="flex items-center gap-3">
+                  {selectedMediaFile.type.startsWith('image/') ? (
+                    <Image className="h-8 w-8 text-primary" />
+                  ) : (
+                    <Video className="h-8 w-8 text-primary" />
+                  )}
+                  <div>
+                    <p className="font-mono text-sm text-foreground">{selectedMediaFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(selectedMediaFile.size)} • {selectedMediaFile.type}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleMediaAnalyze}
+                    disabled={isAnalyzingMedia}
+                    size="sm"
+                  >
+                    {isAnalyzingMedia ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Detect AI
+                      </>
+                    )}
+                  </Button>
+                  <Button onClick={clearMediaFile} variant="ghost" size="sm">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Media Analysis Result */}
+            {mediaAnalysisResult && (
+              <div className="space-y-4 pt-4 border-t border-border/50">
+                {/* AI Detection Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1 font-mono">Detection</p>
+                    <Badge className={`${mediaAnalysisResult.isAIGenerated ? 'bg-destructive' : 'bg-success'} text-white`}>
+                      {mediaAnalysisResult.isAIGenerated ? 'AI GENERATED' : 'AUTHENTIC'}
+                    </Badge>
+                  </div>
+                  <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1 font-mono">Confidence</p>
+                    <p className={`text-3xl font-mono font-bold ${
+                      mediaAnalysisResult.confidence >= 80 ? 'text-success' :
+                      mediaAnalysisResult.confidence >= 60 ? 'text-warning' : 'text-destructive'
+                    }`}>
+                      {mediaAnalysisResult.confidence}%
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1 font-mono">Risk Level</p>
+                    <Badge className={`${getRiskLevelBadgeColor(mediaAnalysisResult.riskLevel)} text-white`}>
+                      {mediaAnalysisResult.riskLevel.replace(/_/g, ' ').toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1 font-mono">Media Type</p>
+                    <div className="flex items-center justify-center gap-1">
+                      {mediaAnalysisResult.mediaType === 'image' ? (
+                        <Image className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Video className="h-5 w-5 text-primary" />
+                      )}
+                      <span className="text-sm font-mono text-foreground capitalize">
+                        {mediaAnalysisResult.mediaType}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Analysis */}
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="h-4 w-4 text-primary" />
+                    <span className="font-mono text-sm text-primary">AI Forensic Analysis</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{mediaAnalysisResult.analysis}</p>
+                </div>
+
+                {/* Indicators */}
+                {mediaAnalysisResult.indicators.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-mono text-sm text-warning flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Detection Indicators
+                    </h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {mediaAnalysisResult.indicators.map((indicator, index) => (
+                        <div
+                          key={index}
+                          className="p-3 rounded-lg bg-warning/10 border border-warning/30"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-mono text-sm text-warning">
+                              {indicator.type.replace(/_/g, ' ')}
+                            </span>
+                            <Badge variant="warning" className="text-xs">
+                              Weight: {indicator.weight}/10
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{indicator.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {mediaAnalysisResult.recommendations.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-mono text-sm text-primary flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4" />
+                      Recommendations
+                    </h4>
+                    <ul className="space-y-1">
+                      {mediaAnalysisResult.recommendations.map((rec, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm text-muted-foreground">
                           <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                           <span>{rec}</span>
