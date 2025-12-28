@@ -80,9 +80,6 @@ const Signup = () => {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center p-4 rounded-2xl bg-primary/10 border border-primary/30 mb-4 shadow-[0_0_30px_hsl(var(--primary)/0.3)]">
-            <Shield className="h-12 w-12 text-primary" />
-          </div>
           <h1 className="text-3xl font-mono font-bold text-foreground mb-2">
             Join CyberShield
           </h1>

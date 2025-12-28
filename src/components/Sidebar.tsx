@@ -31,19 +31,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/security-score", label: "Security Score", icon: Gauge },
-  { path: "/network", label: "Network Devices", icon: Wifi },
   { path: "/phishing", label: "Phishing Detection", icon: Mail },
-  { path: "/ai-detection", label: "AI Detection", icon: ScanEye },
   { path: "/threats", label: "Threat Monitoring", icon: Activity },
-  { path: "/web-scanner", label: "Web Scanner", icon: Globe },
-  { path: "/secure-chat", label: "Secure Chat", icon: MessageSquare },
-  { path: "/security-tools", label: "Security Tools", icon: Wrench },
   { path: "/email-breach", label: "Email Breach Checker", icon: AlertTriangle },
-  { path: "/ssl-checker", label: "SSL Checker", icon: Lock },
   { path: "/dns-checker", label: "DNS Security", icon: Globe2 },
-  { path: "/dark-web", label: "Dark Web Monitor", icon: EyeOff },
-  { path: "/activity-logs", label: "Activity Logs", icon: ClipboardList },
+  { path: "/secure-chat", label: "AI Assistant", icon: MessageSquare },
+
+  // { path: "/security-score", label: "Security Score", icon: Gauge },
+  
+  { path: "/security-tools", label: "Security Tools", icon: Wrench, locked: true },
+  { path: "/web-scanner", label: "Web Scanner", icon: Globe, locked: true },
+  { path: "/network", label: "Network Devices", icon: Wifi, locked: true },
+  { path: "/ssl-checker", label: "SSL Checker", icon: Lock, locked: true },
+  { path: "/ai-detection", label: "AI Detection", icon: ScanEye, locked: true },
+  { path: "/dark-web", label: "Dark Web Monitor", icon: EyeOff, locked: true },
+  { path: "/activity-logs", label: "Activity Logs", icon: ClipboardList, locked: true },
 ];
 
 export const Sidebar = () => {
@@ -137,7 +139,7 @@ export const Sidebar = () => {
                   to={item.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-300 group",
+                    "flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-300 group relative",
                     isActive
                       ? "bg-primary/10 border border-primary/30 text-primary shadow-[0_0_15px_hsl(var(--primary)/0.2)]"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent",
@@ -149,7 +151,10 @@ export const Sidebar = () => {
                       isActive ? "text-primary" : "group-hover:text-primary",
                     )}
                   />
-                  <span className="font-mono text-sm truncate">{item.label}</span>
+                  <span className="font-mono text-sm truncate flex-1">{item.label}</span>
+                  {item.locked && (
+                    <Lock className="h-3 w-3 text-muted-foreground/50 flex-shrink-0" />
+                  )}
                 </Link>
               );
             })}
