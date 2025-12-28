@@ -1,20 +1,23 @@
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge-custom";
+import { ThreatComparison } from "@/components/ThreatComparison";
+import { ReportExport } from "@/components/ReportExport";
 import {
   Shield,
   AlertTriangle,
   Activity,
   Globe,
-  Server,
-  Users,
   TrendingUp,
   Clock,
   ChevronRight,
   Loader2,
   Mail,
   Ban,
+  BarChart3,
+  Download,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   XAxis,
   YAxis,
@@ -36,6 +39,34 @@ import { Link } from "react-router-dom";
 const Dashboard = () => {
   const { threats, stats, trendData, threatTypes, isLoading } = useThreatAnalytics();
 
+  const downloadTrendData = () => {
+    const report = {
+      generatedAt: new Date().toISOString(),
+      period: "Last 7 Days",
+      trendData: trendData,
+      summary: {
+        totalThreats: stats.totalThreats,
+        criticalThreats: stats.criticalThreats,
+        highThreats: stats.highThreats,
+        phishingDetected: stats.phishingDetected,
+        blockedIPs: stats.blockedIPs,
+      },
+      comparison: {
+        peakDay: trendData.reduce((max, d) => d.threats > max.threats ? d : max, trendData[0] || { date: '-', threats: 0 }),
+        avgThreatsPerDay: trendData.length > 0 ? Math.round(trendData.reduce((sum, d) => sum + d.threats, 0) / trendData.length) : 0,
+        avgPhishingPerDay: trendData.length > 0 ? Math.round(trendData.reduce((sum, d) => sum + d.phishing, 0) / trendData.length) : 0,
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `threat_trends_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Calculate security score based on stats
   const securityScore = Math.max(0, Math.min(100, 
     100 - (stats.criticalThreats * 10) - (stats.highThreats * 5) - (stats.phishingDetected * 3)
@@ -48,9 +79,6 @@ const Dashboard = () => {
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border/50">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
               <div>
                 <h1 className="text-2xl lg:text-3xl font-mono font-bold text-foreground tracking-tight">
                   Security Dashboard
@@ -61,6 +89,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <ReportExport variant="outline" size="sm" />
               <Link 
                 to="/threats" 
                 className="text-sm font-mono text-muted-foreground hover:text-primary transition-colors"
@@ -197,11 +226,17 @@ const Dashboard = () => {
           {/* Trend Chart */}
           <Card variant="cyber" className="lg:col-span-2 animate-fade-in" style={{ animationDelay: "0.5s" }}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Threat Trends (7 Days)
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Threat Trends (7 Days)
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={downloadTrendData}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-[300px]">
@@ -273,6 +308,62 @@ const Dashboard = () => {
                   <div className="w-3 h-3 rounded-full bg-success" />
                   <span className="text-sm text-muted-foreground font-mono">Blocked</span>
                 </div>
+              </div>
+
+              {/* Week-over-Week Comparison Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-border/50">
+                {(() => {
+                  const thisWeekThreats = trendData.slice(-7).reduce((sum, d) => sum + d.threats, 0);
+                  const lastWeekThreats = trendData.slice(0, Math.max(0, trendData.length - 7)).reduce((sum, d) => sum + d.threats, 0) || thisWeekThreats;
+                  const thisWeekPhishing = trendData.slice(-7).reduce((sum, d) => sum + d.phishing, 0);
+                  const lastWeekPhishing = trendData.slice(0, Math.max(0, trendData.length - 7)).reduce((sum, d) => sum + d.phishing, 0) || thisWeekPhishing;
+                  const thisWeekBlocked = trendData.slice(-7).reduce((sum, d) => sum + d.blocked, 0);
+                  const lastWeekBlocked = trendData.slice(0, Math.max(0, trendData.length - 7)).reduce((sum, d) => sum + d.blocked, 0) || thisWeekBlocked;
+                  
+                  const threatChange = lastWeekThreats > 0 ? Math.round(((thisWeekThreats - lastWeekThreats) / lastWeekThreats) * 100) : 0;
+                  const phishingChange = lastWeekPhishing > 0 ? Math.round(((thisWeekPhishing - lastWeekPhishing) / lastWeekPhishing) * 100) : 0;
+                  const blockedChange = lastWeekBlocked > 0 ? Math.round(((thisWeekBlocked - lastWeekBlocked) / lastWeekBlocked) * 100) : 0;
+                  const avgDaily = trendData.length > 0 ? Math.round(thisWeekThreats / Math.min(7, trendData.length)) : 0;
+
+                  return (
+                    <>
+                      <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <p className="text-xs text-muted-foreground font-mono mb-1">Threats This Week</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-mono font-bold text-destructive">{thisWeekThreats}</span>
+                          <span className={`text-xs font-mono ${threatChange > 0 ? 'text-destructive' : 'text-success'}`}>
+                            {threatChange > 0 ? '↑' : '↓'} {Math.abs(threatChange)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
+                        <p className="text-xs text-muted-foreground font-mono mb-1">Phishing This Week</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-mono font-bold text-warning">{thisWeekPhishing}</span>
+                          <span className={`text-xs font-mono ${phishingChange > 0 ? 'text-destructive' : 'text-success'}`}>
+                            {phishingChange > 0 ? '↑' : '↓'} {Math.abs(phishingChange)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                        <p className="text-xs text-muted-foreground font-mono mb-1">Blocked This Week</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-mono font-bold text-success">{thisWeekBlocked}</span>
+                          <span className={`text-xs font-mono ${blockedChange > 0 ? 'text-success' : 'text-warning'}`}>
+                            {blockedChange > 0 ? '↑' : '↓'} {Math.abs(blockedChange)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                        <p className="text-xs text-muted-foreground font-mono mb-1">Avg Daily Threats</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-mono font-bold text-primary">{avgDaily}</span>
+                          <span className="text-xs font-mono text-muted-foreground">per day</span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
@@ -440,6 +531,11 @@ const Dashboard = () => {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Threat Comparison Section */}
+        <div className="animate-fade-in" style={{ animationDelay: "0.9s" }}>
+          <ThreatComparison threats={threats} isLoading={isLoading} />
         </div>
       </div>
     </Layout>
